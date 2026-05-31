@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Productos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <div class="container mt-5" style="max-width: 650px;">
+        <div class="card shadow-lg border-0 rounded-4">
+            <div class="card-header bg-gradient bg-primary text-white py-3 rounded-top-4">
+                <h4 class="mb-0 fw-bold">🔍 Consulta Inteligente de Artículos</h4>
+            </div>
+            
+            <div class="card-body p-4">
+                <form id="search-form" class="mb-4">
+                    <label class="form-label fw-semibold text-secondary">Escriba el código exacto del producto (Ej: P001, P002):</label>
+                    <div class="input-group input-group-lg shadow-sm">
+                        <input type="text" id="prod-code" class="form-control text-uppercase font-monospace" placeholder="CÓDIGO DEL PRODUCTO..." required autocomplete="off">
+                        <button type="submit" class="btn btn-dark fw-bold px-4">Buscar</button>
+                    </div>
+                </form>
+
+                <div id="result-box" class="card border-0 shadow-sm bg-white p-2 d-none">
+                    <div class="row g-0 align-items-center">
+                        <div class="col-md-4 text-center">
+                            <img id="res-img" src="" class="img-fluid rounded-start p-2" style="max-height: 140px; object-fit: contain;" alt="Producto">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body py-2">
+                                <span id="res-cat" class="badge bg-secondary mb-1 text-uppercase"></span>
+                                <h5 id="res-nombre" class="card-title fw-bold text-dark mb-2"></h5>
+                                <p class="mb-1"><strong>Costo:</strong> <span id="res-precio" class="text-success fw-bold"></span></p>
+                                <p class="mb-0"><strong>Unidades Disponibles:</strong> <span id="res-stock" class="badge"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="error-box" class="alert alert-warning text-center d-none fw-semibold rounded-3" role="alert"></div>
+
+                <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">Módulo de consultas internas</span>
+                    <a href="./principal.html" class="btn btn-outline-secondary fw-semibold">🔙 Regresar al Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if (!localStorage.getItem('session_user')) {
+            window.location.href = "./index.html";
+        }
+
+        const BACKEND_URL = "https://sistema-backend-unfv.onrender.com";
+
+        document.getElementById('search-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const codigo = document.getElementById('prod-code').value.trim();
+            const rBox = document.getElementById('result-box');
+            const eBox = document.getElementById('error-box');
+
+            rBox.classList.add('d-none');
+            eBox.classList.add('d-none');
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/productos/${codigo}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    // Inyección de datos dinámicos en los contenedores estéticos
+                    document.getElementById('res-img').src = data.producto.imagen;
+                    document.getElementById('res-cat').textContent = data.producto.categoria;
+                    document.getElementById('res-nombre').textContent = data.producto.nombre;
+                    document.getElementById('res-precio').textContent = data.producto.precio;
+                    
+                    const stockSpan = document.getElementById('res-stock');
+                    stockSpan.textContent = `${data.producto.stock} uds`;
+                    
+                    // Ajustar colores del badge según stock
+                    if(data.producto.stock === 0) {
+                        stockSpan.className = "badge bg-danger";
+                    } else if (data.producto.stock <= 5) {
+                        stockSpan.className = "badge bg-warning text-dark";
+                    } else {
+                        stockSpan.className = "badge bg-success";
+                    }
+
+                    rBox.classList.remove('d-none');
+                } else {
+                    eBox.textContent = data.message;
+                    eBox.classList.remove('d-none');
+                }
+            } catch (err) {
+                eBox.textContent = "Error al conectar con la API central.";
+                eBox.classList.remove('d-none');
+            }
+        });
+    </script>
+</body>
+</html>
